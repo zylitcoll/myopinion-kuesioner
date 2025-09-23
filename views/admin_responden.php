@@ -20,8 +20,7 @@ require __DIR__ . '/partials/sidebar_admin.php';
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nama Responden</th>
+                            <th>No</th> <th>Nama Responden</th>
                             <th>Email</th>
                             <?php for ($i = 1; $i <= 9; $i++): ?>
                                 <th>P<?php echo $i; ?></th>
@@ -29,10 +28,12 @@ require __DIR__ . '/partials/sidebar_admin.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($responden as $r): ?>
+                        <?php 
+                        $nomor = 1; // 1. Inisialisasi variabel penghitung
+                        foreach ($responden as $r): 
+                        ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($r['id']); ?></td>
-                            <td><?php echo htmlspecialchars($r['responden']); ?></td>
+                            <td><?php echo $nomor++; ?></td> <td><?php echo htmlspecialchars($r['responden']); ?></td>
                             <td><?php echo htmlspecialchars($r['email']); ?></td>
                             <?php for ($i = 1; $i <= 9; $i++): ?>
                                 <td><?php echo htmlspecialchars($r['p'.$i] ?? ''); ?></td>
