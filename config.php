@@ -1,26 +1,36 @@
-# Gunakan image resmi PHP 8.2 dengan Apache
-FROM php:8.2-apache
+<?php
+// config.php
 
-# 1. Instal dependensi sistem yang dibutuhkan sebelum menginstal ekstensi PHP.
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+// Dapatkan string koneksi dari variabel lingkungan
+$conn_string = getenv('DATABASE_URL');
 
-# 2. Instal ekstensi PHP yang dibutuhkan (pdo_pgsql).
-RUN docker-php-ext-configure pgsql -with-pdo-pgsql=/usr/local/pgsql \
-    && docker-php-ext-install pdo pdo_pgsql
+if (!$conn_string) {
+    die("Error: DATABASE_URL environment variable is not set.");
+}
 
-# 3. Salin semua file proyek ke dalam folder web server di dalam container
-COPY . /var/www/html/
+try {
+    // Parse string koneksi untuk mendapatkan detail yang diperlukan oleh PDO
+    $url = parse_url($conn_string);
 
-# 4. Berikan izin tulis (write) kepada server web (www-data) pada folder database
-RUN chown -R www-data:www-data /var/www/html/database && \
-    chmod -R 775 /var/www/html/database
+    // Ambil nilai dari array yang dihasilkan
+    $host = $url['host'];
+    $dbname = ltrim($url['path'], '/');
+    $user = $url['user'];
+    $password = $url['pass'];
+    
+    // Buat DSN (Data Source Name)
+    $dsn = "pgsql:host={$host};dbname={$dbname};user={$user};password={$password}";
+    
+    // Buat koneksi ke database PostgreSQL
+    $pdo = new PDO($dsn);
+    
+    // Setel mode error untuk menampilkan exception
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Setel mode pengambilan data default ke array asosiatif
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-# 5. Buat skrip yang akan berjalan saat container pertama kali dijalankan
-RUN echo '#!/bin/sh' > /usr/local/bin/entrypoint.sh && \
-    echo 'apache2-foreground' >> /usr/local/bin/entrypoint.sh && \
-    chmod +x /usr/local/bin/entrypoint.sh
-
-# Atur skrip tersebut sebagai perintah utama saat container dijalankan
-CMD ["entrypoint.sh"]
+} catch (PDOException $e) {
+    die("Koneksi ke database PostgreSQL gagal: " . $e->getMessage());
+}
+?>
