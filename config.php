@@ -9,18 +9,26 @@ if (!$conn_string) {
 }
 
 try {
-    // Parse string koneksi untuk mendapatkan detail yang diperlukan oleh PDO
-    $url = parse_url($conn_string);
+    // Memecah string koneksi menjadi bagian-bagian yang relevan
+    // Menggunakan regex untuk penanganan yang lebih andal
+    preg_match(
+        '/^postgresql:\/\/([^:]+):([^@]+)@([^\/]+)\/(.+?)\?/',
+        $conn_string,
+        $matches
+    );
 
-    // Ambil nilai dari array yang dihasilkan
-    $host = $url['host'];
-    $dbname = ltrim($url['path'], '/');
-    $user = $url['user'];
-    $password = $url['pass'];
+    if (count($matches) < 5) {
+        die("Error: Invalid DATABASE_URL format.");
+    }
     
+    $user = $matches[1];
+    $password = $matches[2];
+    $host = $matches[3];
+    $dbname = $matches[4];
+
     // Buat DSN (Data Source Name)
     $dsn = "pgsql:host={$host};dbname={$dbname};user={$user};password={$password}";
-    
+
     // Buat koneksi ke database PostgreSQL
     $pdo = new PDO($dsn);
     
