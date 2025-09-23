@@ -1,34 +1,26 @@
-<?php
-// config.php
+# Gunakan image resmi PHP 8.2 dengan Apache
+FROM php:8.2-apache
 
-// Dapatkan string koneksi dari variabel lingkungan
-$conn_string = getenv('DATABASE_URL');
+# 1. Instal dependensi sistem yang dibutuhkan sebelum menginstal ekstensi PHP.
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-if (!$conn_string) {
-    die("Error: DATABASE_URL environment variable is not set.");
-}
+# 2. Instal ekstensi PHP yang dibutuhkan (pdo_pgsql).
+RUN docker-php-ext-configure pgsql -with-pdo-pgsql=/usr/local/pgsql \
+    && docker-php-ext-install pdo pdo_pgsql
 
-try {
-    // Parse string koneksi untuk mendapatkan detail yang diperlukan oleh PDO
-    $url = parse_url($conn_string);
-    $dsn = sprintf(
-        "pgsql:host=%s;dbname=%s;user=%s;password=%s",
-        $url['host'],
-        ltrim($url['path'], '/'),
-        $url['user'],
-        $url['pass']
-    );
+# 3. Salin semua file proyek ke dalam folder web server di dalam container
+COPY . /var/www/html/
 
-    // Buat koneksi ke database PostgreSQL
-    $pdo = new PDO($dsn);
+# 4. Berikan izin tulis (write) kepada server web (www-data) pada folder database
+RUN chown -R www-data:www-data /var/www/html/database && \
+    chmod -R 775 /var/www/html/database
 
-    // Setel mode error untuk menampilkan exception
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+# 5. Buat skrip yang akan berjalan saat container pertama kali dijalankan
+RUN echo '#!/bin/sh' > /usr/local/bin/entrypoint.sh && \
+    echo 'apache2-foreground' >> /usr/local/bin/entrypoint.sh && \
+    chmod +x /usr/local/bin/entrypoint.sh
 
-    // Setel mode pengambilan data default ke array asosiatif
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-
-} catch (PDOException $e) {
-    die("Koneksi ke database PostgreSQL gagal: " . $e->getMessage());
-}
-?>
+# Atur skrip tersebut sebagai perintah utama saat container dijalankan
+CMD ["entrypoint.sh"]

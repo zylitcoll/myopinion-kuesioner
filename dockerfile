@@ -7,8 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Instal ekstensi PHP yang dibutuhkan (pdo_pgsql).
-RUN docker-php-ext-configure pgsql -with-pdo-pgsql=/usr/local/pgsql \
-    && docker-php-ext-install pdo pdo_pgsql
+RUN docker-php-ext-install pdo pdo_pgsql
 
 # 3. Salin semua file proyek ke dalam folder web server di dalam container
 COPY . /var/www/html/
