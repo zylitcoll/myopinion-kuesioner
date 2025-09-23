@@ -1,22 +1,34 @@
 <?php
 // config.php
 
-// Tentukan path untuk file database SQLite
-$db_path = __DIR__ . '/database/myopinion.db';
+// Dapatkan string koneksi dari variabel lingkungan
+$conn_string = getenv('DATABASE_URL');
+
+if (!$conn_string) {
+    die("Error: DATABASE_URL environment variable is not set.");
+}
 
 try {
-    // Buat koneksi ke database SQLite menggunakan PDO
-    // Database akan dibuat secara otomatis jika belum ada.
-    $pdo = new PDO('sqlite:' . $db_path);
-    
-    // Setel mode error untuk menampilkan exception jika terjadi kesalahan
+    // Parse string koneksi untuk mendapatkan detail yang diperlukan oleh PDO
+    $url = parse_url($conn_string);
+    $dsn = sprintf(
+        "pgsql:host=%s;dbname=%s;user=%s;password=%s",
+        $url['host'],
+        ltrim($url['path'], '/'),
+        $url['user'],
+        $url['pass']
+    );
+
+    // Buat koneksi ke database PostgreSQL
+    $pdo = new PDO($dsn);
+
+    // Setel mode error untuk menampilkan exception
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     // Setel mode pengambilan data default ke array asosiatif
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    // Hentikan aplikasi dan tampilkan pesan jika koneksi gagal
-    die("Koneksi ke database SQLite gagal: " . $e->getMessage());
+    die("Koneksi ke database PostgreSQL gagal: " . $e->getMessage());
 }
 ?>
